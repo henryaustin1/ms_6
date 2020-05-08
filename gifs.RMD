@@ -1,0 +1,48 @@
+---
+title: "animations"
+author: "Henry Austin"
+date: "5/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(magick)
+detroit1950 <- image_scale(image_read("1950.png"))
+detroit1960 <- image_scale(image_read("1960.png"))
+detroit1970 <- image_scale(image_read("1970.png"))
+detroit1980 <- image_scale(image_read("1980.png"))
+detroit1990 <- image_scale(image_read("1990.png"))
+detroit2000 <- image_scale(image_read("2000.png"))
+detroit2010 <- image_scale(image_read("2010.png"))
+detroit2018 <- image_scale(image_read("detroit2018.png"))
+
+grandrapids1950 <- image_scale(image_read("grandrapids1950.png"))
+grandrapids1960 <- image_scale(image_read("grandrapids1960.png"))
+grandrapids1970 <- image_scale(image_read("grandrapids1970.png"))
+grandrapids1980 <- image_scale(image_read("grandrapids1980.png"))
+grandrapids1990 <- image_scale(image_read("grandrapids1990.png"))
+grandrapids2000 <- image_scale(image_read("grandrapids2000.png"))
+grandrapids2010 <- image_scale(image_read("grandrapids2010.png"))
+grandrapids2018 <- image_scale(image_read("grandrapids2018 (1).png"))
+
+
+
+
+
+
+```
+
+```{r}
+detroit <- image_resize(c(detroit1950,detroit1960,detroit1970,detroit1980,detroit1990,detroit2000,detroit2010,detroit2018), "300x250!") %>%
+  image_background('white') %>%
+  image_animate(optimize = TRUE, delay = 200)
+image_write(detroit, "detroit.gif")
+
+grandrapids <- image_resize(c(grandrapids1950, grandrapids1960, grandrapids1970,grandrapids1980, grandrapids1990,grandrapids2000, grandrapids2010,grandrapids2018), "300x250!") %>%
+  image_background('white') %>%
+  image_animate(optimize = TRUE, delay = 200)
+image_write(grandrapids, "grandrapids.gif")
+
+```
