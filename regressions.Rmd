@@ -1,0 +1,163 @@
+---
+title: "regressions"
+author: "Henry Austin"
+date: "5/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(broom)
+library(skimr)
+library(readr)
+library(gt)
+library(ggplot2)
+options(scipen = 999)
+
+tracts1950 <- readRDS("ms_6/tracts1950.RDS") %>% drop_na(MedianHHIncome1949)
+tracts1960 <- readRDS("1960MedianFamilyIncome_CensusTracts.RDS")
+tracts2010 <- readRDS("ms_6/tracts2010.RDS")
+tracts2018 <- readRDS("ms_6/tracts2018.RDS") %>% drop_na(MedianHHIncome2018)
+education2010 <-read_csv("nhgis0016_csv/nhgis0016_ds176_20105_2010_tract.csv") %>% filter(STATE == "Michigan")
+education1990 <-read_csv("eduregression/nhgis0017_ds123_1990_tract.csv") %>% filter(STATE == "Michigan")
+education2000 <-read_csv("eduregression/nhgis0017_ds151_2000_tract.csv") %>% filter(STATE == "Michigan")
+
+inequality2010 <- read_csv("nhgis0016_csv/nhgis0016_ds177_20105_2010_tract.csv") %>% filter(STATE == "Michigan")
+```
+
+```{r message = FALSE, echo = FALSE}
+
+# 1950 regression joining 
+income_regression1950 <- tracts1950 %>% sf::st_join(tracts2018, by = "NHGISST") %>% select(MedianHHIncome1949,MedianHHIncome2018) %>% mutate(logged_1950 = log(MedianHHIncome1949), logged_2018 = log(MedianHHIncome2018)) %>% unique() 
+
+regression1950 <- lm(MedianHHIncome1949 ~ MedianHHIncome2018, data = income_regression1950) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+
+income1950 <- ggplot(income_regression1950, aes(MedianHHIncome1949, MedianHHIncome2018)) + geom_point() + geom_jitter() + geom_smooth(method = "glm") + labs(title = "1950 Median Family Income vs 2018 Median Family Income", x = "1950 Median Family Income", y = "2018 Median Family Income") 
+
+ggsave("income1950.png")
+```
+
+```{r }
+income1950_regression <- regression1950 %>% gt() %>% 
+  tab_header(title = "1950 Median Income as a Predictor of 2018 Median Income") %>% 
+  cols_label(term = "Variable", estimate = "Estimate", conf.low = "Lower Bound", conf.high = "Upper Bound") %>% fmt_number(columns = vars(conf.low, estimate, conf.high), decimals = 3) %>%  gtsave("1950regression.png") 
+```
+
+```{r}
+education2010 <- education2010 %>% mutate(total = JN9M012 + JN9M013 + JN9M014 + JN9M015 + JN9M016 + JN9M017 +JN9M018 + JN9M029 + 
+        JN9M030 +
+        JN9M031 +
+        JN9M032 + 
+        JN9M033 +
+        JN9M034 +
+        JN9M035)  %>%  drop_na(total) %>% mutate(TRACT = TRACTA)
+education2010$TRACT <- as.numeric(education2010$TRACT)
+education <- education2010 %>% full_join(tracts1950, by = "TRACT") %>% drop_na(MedianHHIncome1949)
+
+education1950 <- lm(MedianHHIncome1949 ~ total, data = education)
+
+
+```
+
+```{r}
+#1960 2018 regression
+tracts1960 <- tracts1960 %>% mutate(TRACT = TRACTA)
+tracts2018 <- tracts2018 %>% mutate(TRACT = TRACTCE) 
+tracts2018$TRACT = as.numeric(tracts2018$TRACT)
+
+income_regression1960 <- tracts1960 %>% full_join(tracts2018, by = "TRACT") %>% select(MedianIncome,MedianHHIncome2018)  %>% unique() 
+
+regression1960 <- lm(MedianIncome ~ MedianHHIncome2018, data = income_regression1960) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+```
+
+```{r}
+tracts1970 <- tracts1970 %>% mutate(TRACT = AGGTRACT)
+
+income_regression1970 <- tracts1970 %>% sf::st_join(tracts2018, by = "TRACT") %>% select(MedianHHIncome1970,MedianHHIncome2018)  %>% unique() 
+
+regression1970 <- lm(MedianHHIncome1970 ~ MedianHHIncome2018, data = income_regression1970) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+```
+
+```{r}
+tracts1980 <- tracts1980 %>% mutate(TRACT = AGGTRACT)
+
+income_regression1980 <- tracts1980 %>% sf::st_join(tracts2018, by = "TRACT") %>% select(MedianHHIncome1980,MedianHHIncome2018)  %>% unique() 
+
+regression1980 <- lm(MedianHHIncome1980 ~ MedianHHIncome2018, data = income_regression1980) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+```
+
+```{r}
+
+income_regression1990 <- tracts1990 %>% sf::st_join(tracts2018, by = "TRACT") %>% select(MedianHHIncome1990,MedianHHIncome2018)  %>% unique() 
+
+regression1990 <- lm(MedianHHIncome1990 ~ MedianHHIncome2018, data = income_regression1990) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+regression1990
+```
+
+```{r}
+
+income_regression2000 <- income_regression2000 <- tracts2000 %>% sf::st_join(tracts2018, by = "NGHISST") %>% select(MedianHHIncome2000,MedianHHIncome2018)  %>% unique() 
+
+regression2000 <- lm(MedianHHIncome2000 ~ MedianHHIncome2018, data = income_regression2000) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+
+income_regression2010 <- income_regression2010 <- tracts2010 %>% sf::st_join(tracts2018, by = "NGHISST") %>% select(MedianHHIncome2010,MedianHHIncome2018)  %>% unique() 
+   
+regression2010 <- lm(MedianHHIncome2010 ~ MedianHHIncome2018, data = income_regression2010) %>% tidy(conf.int = TRUE) %>% select(estimate) %>% slice(2) %>% pull(estimate)
+
+```
+
+
+
+```{r}
+
+
+tibble(Year = c("1950","1960","1970","1980","1990","2000","2010"), "Correlation Coefficient with 2018 Median Income" =  c(regression1950,regression1960,regression1970,regression1980,regression1990,regression2000,regression2010)) %>% gt() %>% tab_header(title = "Correlation between Median Family Income in Census Years to Current Income") %>% fmt_number(columns = vars("Correlation Coefficient with 2018 Median Income"), decimals = 3) %>% gtsave("incomeprediction.png")
+
+```
+
+```{r}
+
+education1990 <- education1990 %>% mutate(total = E33004 + E33005 + E33006 +E33007) %>% mutate(TRACT = TRACTA)
+education1990$TRACT <- as.numeric(education1990$TRACT)
+education_regression1990 <- education1990 %>% full_join(tracts1990, by = "TRACT") %>% select(MedianHHIncome1990,total)
+
+education_regression_1990 <- lm(MedianHHIncome1990 ~ total, data = education_regression1990) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+
+
+education2000 <- education2000 %>% mutate(total = GKT027 + GKT028 + GKT029 + GKT030 + GKT031 + GKT032 + GKT011     + GKT012 + GKT013 + GKT014 +GKT015 + GKT016) %>% mutate(TRACT = TRACTA)
+
+tracts2000 <- tracts2000 %>% mutate(TRACT = AGGTRACT)
+education2000$TRACT <- as.numeric(education2000$TRACT)
+tracts2000$TRACT <- as.numeric(tracts2000$TRACT)
+education_regression2000 <- education2000 %>% full_join(tracts2000, by = "TRACT") %>% select(MedianHHIncome2000,total)
+
+education_regression_2000 <- lm(MedianHHIncome2000 ~ total, data = education_regression2000) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+
+education2010 <- education2010 %>% mutate(total = JN9M012 + JN9M013 + JN9M014 + JN9M015 + JN9M016 + JN9M017 +JN9M018 + JN9M029 + 
+        JN9M030 +
+        JN9M031 +
+        JN9M032 + 
+        JN9M033 +
+        JN9M034 +
+        JN9M035)  %>%  drop_na(total) %>% mutate(TRACT = TRACTA)
+education2010$TRACT <- as.numeric(education2010$TRACT)
+tracts2010 <- tracts2010 %>% mutate(TRACT = TRACTCE10)
+tracts2010$TRACT <- as.numeric(tracts2010$TRACT)
+education_regression2010 <- education2010 %>% full_join(tracts2010, by = "TRACT") 
+
+education_regression_2010 <- lm(MedianHHIncome2010 ~ total, data = education_regression2010) %>% tidy(conf.int = TRUE) %>% 
+  select(estimate) %>% slice(2) %>% pull(estimate)
+
+tibble(Year = c("1990","2000","2010"), "Correlation Coefficient" = c(education_regression_1990,education_regression_2000, education_regression_2010)) %>% gt() %>% tab_header(title = "Correlation Between Median Household Income and 2010 Educational Attainment") %>% fmt_number(columns = vars("Correlation Coefficient"), decimals = 3) %>% 
+
+gtsave("educationvsincome.png")
+```
